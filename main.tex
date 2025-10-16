@@ -46,10 +46,10 @@
 
 基于此，本项目以“\textbf{智能制造场景下的零件智能检测及无序分拣系统}”为研究对象，聚焦于三钢柱塞泵系列零件的自动化检测与抓取，构建一套从缺陷识别到自主分拣的智能化系统。
 
-系统通过 \textbf{LWDetr} \cite{carion2020detr,zhu2021deformable} 轻量化目标检测模型实现表面缺陷（划痕、脏污）检测，再结合 \textbf{GraspNet} \cite{tenPas2017gpd,mahler2017dexnet}无序抓取网络实现复杂堆叠环境下的智能分拣，最终完成零件的“自动识别—缺陷判定—自主抓取—分拣分类”全流程闭环。
+系统通过 \textbf{LWDetr} \cite{carion2020end,zhu2020deformable} 轻量化目标检测模型实现表面缺陷（划痕、脏污）检测，再结合 \textbf{GraspNet} \cite{ten2017grasp,mahler2017dex}无序抓取网络实现复杂堆叠环境下的智能分拣，最终完成零件的“自动识别—缺陷判定—自主抓取—分拣分类”全流程闭环。
 
 该项目的研究与应用将提升制造业中零件检测与分拣环节的自动化水平，降低人工成本与误检率，推动智能制造向“感知—决策—执行”一体化方向发展，并为泵类零件等精密部件的质量控制提供智能化解决方案。
-近年来，面向工业4.0的智能制造与云—边协同架构快速发展，推动产线数字化、柔性化升级\cite{lasi2014industry4,shi2016edge,kusiak2018smart}。
+近年来，面向工业4.0的智能制造与云—边协同架构快速发展，推动产线数字化、柔性化升级\cite{lasi2014industry,shi2016edge,davis2015smart}。
 \section{场景与系统总体架构}
 
 本项目以“三钢柱塞泵连杆配件原厂件泵头零件”的生产与检测环节为研究对象，构建了一个面向智能制造场景的零件智能检测与无序分拣系统。系统整体由 \textbf{感知层、决策层、执行层} 三部分构成，涵盖了从图像采集、缺陷识别、抓取规划到机械臂执行的完整流程。
@@ -139,8 +139,8 @@
 
 \subsection{边缘推理层：轻量化检测与抓取决策}
 
-\begin{figure}[htbp]\centering
-\includegraphics[width=0.7\textwidth]{graspnet.png}
+\begin{figure}\centering
+\includegraphics[width=0.7\textwidth]{result.png}
 \caption{表面缺陷检测示例}\label{fig:defect_examples}
 \end{figure}
 在边缘侧部署 \textbf{LWDetr} 与 \textbf{GraspNet} 模型，实现对现场数据的实时处理：
@@ -230,7 +230,7 @@
 
 GraspNet 以点云数据为主要输入，核心结构包括：
 \begin{itemize}
-    \item \textbf{点云特征编码模块：} 采用 PointNet++ \cite{qi2017pointnetplusplus} 或 SparseConv3D 提取空间局部特征，获得零件表面的几何描述；
+    \item \textbf{点云特征编码模块：} 采用 PointNet++ \cite{qi2017pointnet++} 或 SparseConv3D 提取空间局部特征，获得零件表面的几何描述；
     \item \textbf{候选抓取点生成模块：} 基于几何中心与表面法向分布，生成多组潜在抓取姿态；
     \item \textbf{抓取质量评估网络：} 通过卷积与注意力机制，预测每个候选姿态的抓取置信度（grasp quality score）；
     \item \textbf{姿态回归模块：} 输出抓取位姿的六维参数 $\{x, y, z, \theta, \phi, \psi\}$，用于机械臂轨迹规划。
@@ -275,7 +275,7 @@ GraspNet 以点云数据为主要输入，核心结构包括：
 
 \begin{enumerate}
     \item 轻量化检测与部署优化：采用改进的 LWDetr 作为缺陷检测核心，通过剪枝、蒸馏与 INT8 量化并结合 TensorRT 加速，在嵌入式与通用 GPU 平台实现高精度、低延迟的实时推理（检测延迟可低至 50\,ms）。优化的 anchor-free 结构更适应零件形状复杂、尺寸差异显著的检测任务，显著降低硬件成本。
-    \item GraspNet 无序抓取与分拣策略：基于点云的深度抓取网络从单帧或多视角融合点云中直接预测最优 6D 抓取位姿，并输出抓取置信度；与检测语义融合后可自动避开受损区域。结合 ROS 2 \cite{quigley2009ros} 与 MoveIt\cite{sucan2012ompl} 的轨迹规划，兼顾精度与安全性。
+    \item GraspNet 无序抓取与分拣策略：基于点云的深度抓取网络从单帧或多视角融合点云中直接预测最优 6D 抓取位姿，并输出抓取置信度；与检测语义融合后可自动避开受损区域。结合 ROS 2 \cite{quigley2009ros} 与 MoveIt\cite{sucan2012open} 的轨迹规划，兼顾精度与安全性。
     \begin{itemize}
         \item 零件姿态无关抓取：支持随机堆叠与部分遮挡场景的稳定抓取；
         \item 自适应抓取优化：依据表面法向与摩擦特性动态调整抓取姿态；
