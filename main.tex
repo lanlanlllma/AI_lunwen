@@ -3,7 +3,7 @@
 \usepackage{url}   % 网页链接
 \usepackage{subcaption} % 子标题
 \usepackage{tikz}
-
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit}
 \usetikzlibrary{positioning,arrows.meta,calc}
 % Avoid hyperref warnings about tokens in PDF strings (from xeCJK/ctex internals)
 \makeatletter
@@ -46,7 +46,7 @@
 
 基于此，本项目以“\textbf{智能制造场景下的零件智能检测及无序分拣系统}”为研究对象，聚焦于三钢柱塞泵系列零件的自动化检测与抓取，构建一套从缺陷识别到自主分拣的智能化系统。
 
-系统通过 \textbf{LWDetr} \cite{carion2020end,zhu2020deformable} 轻量化目标检测模型实现表面缺陷（划痕、脏污）检测，再结合 \textbf{GraspNet} \cite{ten2017grasp,mahler2017dex}无序抓取网络实现复杂堆叠环境下的智能分拣，最终完成零件的“自动识别—缺陷判定—自主抓取—分拣分类”全流程闭环。
+
 
 该项目的研究与应用将提升制造业中零件检测与分拣环节的自动化水平，降低人工成本与误检率，推动智能制造向“感知—决策—执行”一体化方向发展，并为泵类零件等精密部件的质量控制提供智能化解决方案。
 近年来，面向工业4.0的智能制造与云—边协同架构快速发展，推动产线数字化、柔性化升级\cite{lasi2014industry,shi2016edge,davis2015smart}。
@@ -76,7 +76,7 @@
 \subsection{系统总体架构}
 
 系统由图像采集模块、智能检测模块、抓取规划模块、机械臂控制模块及上位机监控模块组成。整体结构如图~\ref{fig:system_architecture} 所示。
-
+系统通过 \textbf{LWDetr} \cite{carion2020end,zhu2020deformable} 轻量化目标检测模型实现表面缺陷（划痕、脏污）检测，再结合 \textbf{GraspNet} \cite{ten2017grasp,mahler2017dex}无序抓取网络实现复杂堆叠环境下的智能分拣，最终完成零件的“自动识别—缺陷判定—自主抓取—分拣分类”全流程闭环。
 \begin{figure}[h]
     \centering
     \begin{tikzpicture}[
@@ -145,6 +145,7 @@
 \end{figure}
 在边缘侧部署 \textbf{LWDetr} 与 \textbf{GraspNet} 模型，实现对现场数据的实时处理：
 
+
 \begin{itemize}
     \item \textbf{LWDetr 模型：}  
     基于 Transformer 架构的轻量级目标检测网络，通过特征金字塔和自注意力机制，在保持高检测精度的同时显著降低计算量，可在 Jetson AGX Orin 等嵌入式平台上实现实时推理，用于检测泵头零件表面的划痕与脏污。
@@ -159,6 +160,10 @@
 \subsection{云端智能层：多模态大模型与 MCP 服务}
 
 云端部署多模态工业大模型，作为系统的智能中枢，通过 \textbf{MCP} 与边缘节点进行数据交互与知识协同，主要功能包括：
+% 请在您的 LaTeX 文档导言区确保包含以下宏包
+% \usepackage{tikz}
+% \usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit}
+
 
 \begin{itemize}
     \item \textbf{多模态数据理解：}  
@@ -173,13 +178,106 @@
 
 \subsection{人机协同层：智能交互与多模态可视化}
 
-通过云端大模型与 MCP 服务接口，系统具备自然语言与视觉多模态的人机交互能力：
+本系统的人机协同层通过集成云端大语言模型（LLM）与多模态-控制-规划（MCP）服务接口，实现了对机械臂行为的直接自然语言控制。如图~\ref{fig:speech_to_action_pipeline_revised}所示，为确保交互的实时性与精确性，我们设计并实现了一条严谨的\textbf{流式语音到操作（Speech-to-Action）的交互逻辑链路}。
+\begin{figure}[htbp]
+    \centering
+    % 使用 resizebox 将图表宽度强制缩放到与文本宽度一致，高度按比例自动调整
+    % 这是解决 Overfull \hbox 警告最专业、最有效的方法
+    \resizebox{\textwidth}{!}{
+        \begin{tikzpicture}[
+            node distance=1.5cm and 1.5cm,
+            % --- 样式定义 ---
+            block/.style={rectangle, draw, thick, rounded corners=3pt, fill=blue!10,
+                          text width=2.5cm, minimum height=1.5cm, align=center, font=\small},
+            io/.style={trapezium, trapezium left angle=70, trapezium right angle=110,
+                       draw, thick, fill=green!15, minimum height=1.5cm, align=center, font=\small},
+            data/.style={rectangle, draw, thin, fill=gray!10, font=\scriptsize\ttfamily, align=left, text width=4.5cm},
+            feedback/.style={rectangle, draw, thick, rounded corners=3pt, fill=orange!10,
+                             text width=4cm, minimum height=1.2cm, align=center, font=\small},
+            line/.style={draw, -{Stealth[length=6pt,width=6pt]}, thick, shorten >=2pt, shorten <=2pt}
+        ]
+    
+        % --- 节点定义 ---
+        \node[io] (operator) {语音输入};
+        \node[block, right=of operator] (asr) {
+            \textbf{实时语音转录} \\ (ASR \& VAD)
+        };
+        \node[block, right=of asr] (llm) {
+            \textbf{意图识别与指令生成} \\ (Instruction-Tuned LLM)
+        };
+        \node[block, right=2.5cm of llm] (mcp) {
+            \textbf{指令校验与API转译} \\ (MCP 服务接口)
+        };
+        \node[io, below=2.5cm of mcp] (robot) {机械臂执行};
+    
+        % JSON指令节点
+        \node[data, below=1cm of llm] (json) {
+            \{ \\
+            \quad "command": "set\_parameter", \\
+            \quad "target": "joint", "id": 5, \\
+            \quad "parameter": "max\_velocity", \\
+            \quad "value": 30, "unit": "deg/s" \\
+            \}
+        };
+    
+        % 反馈闭环节点
+        \node[feedback, below=of json, yshift=-1.5cm] (feedback) {
+            \textbf{多模态可视化界面} \\ 实时参数更新 \& 语音确认
+        };
+    
+        % --- 连线定义 ---
+        \path[line] (operator.east) -- node[midway, above, font=\scriptsize] {语音流} (asr.west);
+        \path[line] (asr.east) -- node[midway, above, font=\scriptsize] {转录文本} (llm.west);
+        \path[line] (mcp.south) -- node[midway, above, font=\scriptsize] {底层API调用} (robot.north);
+        \path[line] (llm.south) -- node[midway, left, font=\scriptsize, align=center] {结构化\\JSON指令} (json.north);
+        \path[line] (json) -- (mcp);
+        \path[line, orange!80!black]  (mcp.east) -- ++(2,0)  % 向右
+  -- ++(0,-8)            % 向下
+  -- (feedback.east);      % 向左连接到 feedback.east
 
-\begin{itemize}
-    \item 操作人员可通过语音或文本指令与系统交互，例如“展示今日检测缺陷分布”或“调整抓取策略”；
-    \item 系统可通过多模态反馈（图像、语音、图表）解释检测与分拣过程，提升可解释性；
-    \item 在异常情况下，系统自动生成事件报告并通过大模型生成可读性高的运维日志。
-\end{itemize}
+        \path[line, orange!80!black] (feedback.west) -- (operator.south) node[pos=0.25, right, font=\scriptsize, black] {闭环反馈};
+    
+        % 整体模块虚线框
+        \node[draw, dashed, inner sep=10pt, fit=(asr) (llm) (mcp), label={[font=\small\bfseries]above:Speech-to-Action 交互逻辑链路}] (pipeline) {};
+    
+        \end{tikzpicture}
+    } % resizebox 命令的结束括号
+    \caption{人机协同层的流式语音到操作（Speech-to-Action）交互逻辑链路}
+    \label{fig:speech_to_action_pipeline_revised}
+\end{figure}
+
+该链路的工作流程如下：
+\begin{enumerate}
+    \item \textbf{实时语音转录与端点检测：} 前端麦克风阵列采集操作员的语音流，并实时传送至自动语音识别（ASR）服务。该服务采用流式识别模式，在操作员说话的同时即开始逐字生成文本，而非等待整句话结束后再处理。同时，语音活动检测（VAD）算法监测语音能量，一旦判断对话结束，立即将完整的转录文本发送至下一步。这一机制是实现低延迟交互的关键。
+
+    \item \textbf{意图识别与结构化指令生成：} 转录文本被输入到经过特定指令微调（Instruction-Tuning）的大语言模型中。LLM的核心任务并非进行开放式对话，而是执行\textbf{意图识别}与\textbf{参数提取}。它将自然语言指令（如“将关节5的转速限制在每秒30度以内”）解析，并将其转换为一个预定义的、严格的\textbf{JSON格式结构化指令}，例如：
+        \begin{verbatim}
+{
+  "command": "set_parameter",
+  "target": "joint",
+  "id": 5,
+  "parameter": "max_velocity",
+  "value": 30,
+  "unit": "deg/s"
+}
+    \end{verbatim}
+
+    \item \textbf{指令校验与底层API转译：} 该JSON对象被发送至本地的MCP服务接口。MCP作为\textbf{安全中间件}，首先对指令进行合法性与安全性校验（例如，检查设定值是否在机械臂的安全运动范围内）。校验通过后，MCP负责将该结构化指令精确地转译为机器人控制器能够执行的底层API调用或脚本命令，并下发给机械臂执行。
+\end{enumerate}
+
+整个交互过程通过多模态可视化界面进行闭环反馈。当指令被成功执行后，界面上的相关参数会实时更新，并伴有简短的语音确认（如“检测置信度已更新”），确保操作员对机器人的状态有完全、即时的掌控。这种将LLM的理解能力与MCP的精确控制相结合的架构，有效解决了从模糊的人类语言到精确的机器语言之间的转换鸿沟，极大地提升了复杂机器人系统的现场调试与人机协作效率。
+% 请确保您的 LaTeX 导言区已加载以下库:
+% \usepackage{tikz}
+% \usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit}
+
+% 请确保您的 LaTeX 导言区已加载以下库:
+% \usepackage{graphicx} % resizebox 功能需要此宏包
+% \usepackage{tikz}
+% \usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit}
+
+
+
+
 
 \subsection{系统数据流与云边协同示意}
 
@@ -288,14 +386,13 @@ GraspNet 以点云数据为主要输入，核心结构包括：
 
 \subsection{实用性与落地分析}
 
-\begin{itemize}
-    \item 系统可扩展性：检测、抓取、分拣与交互模块均可独立部署或联合运行，快速迁移到不同生产线；更换检测模型即可适配新零件类型。
-    \item 工业落地可行性：以 Jetson Orin NX 搭配 RealSense D455 的低成本组合，可在单台工业机械臂上稳定运行；抓取成功率超过行业基准水平，满足中小型制造企业的效率与成本需求。
-    \item 经济效益：自动检测与分拣可减少人工检测工作量，提升整体产线良品率与节拍。
-    \item 可持续优化：云端持续学习与在线微调能力使系统在不同批次与型号变化中自动适应，减少人工标注与重新训练成本。
-    \item 安全与可靠性：本地—云端分布式架构确保核心数据在边缘端加密存储与推理，云端仅接收抽象特征与统计数据用于优化，保障生产信息安全。
-    \item 智能制造推广潜力：架构与算法具有通用性，可移植至装配、检测、搬运等环节，为高柔性、可自优化的智能工厂提供可行范例。
-\end{itemize}
+本系统在设计之初便充分考量了工业环境下的实用性与落地可行性。在硬件层面，我们选用 Jetson Orin NX 与 RealSense D455 等高性价比组合，确保方案能够经济、稳定地在单台工业机械臂上运行，其超越行业基准的抓取成功率可直接满足中小型制造企业对效率与成本的双重诉求。这不仅能通过自动化检测与分拣显著减少人工工作量，更能有效提升产线整体的良品率与生产节拍，带来直接的经济效益。
+
+系统的核心优势更体现在其高度的灵活性与智能性。检测、抓取、分拣与交互等功能模块均可独立部署或联合运行，使其能快速迁移至不同生产线，并通过更换模型迅速适配新零件类型，展现了卓越的可扩展性。同时，我们引入的云端持续学习与在线微调机制，使系统具备了在不同批次与型号变化中自我优化的能力，极大降低了传统方案所需的人工标注与重新训练成本。
+
+在保障层面，我们采用本地—云端分布式架构，确保核心数据在边缘端加密处理与推理，云端仅接收抽象特征用于模型迭代，有力地保障了企业生产信息的安全。
+
+综上所述，该系统通用的架构与算法不仅解决了当前的应用难题，更具备向装配、搬运等更广泛工业环节推广的巨大潜力，为构建高柔性、可自优化的未来智能工厂提供了坚实的技术验证与可行的落地范例。
 
 \begin{figure}[htbp]\centering
 \fbox{\begin{minipage}[c][5cm][c]{0.9\linewidth}\centering 图占位：检测准确率/分拣成功率/节拍柱状图\end{minipage}}
