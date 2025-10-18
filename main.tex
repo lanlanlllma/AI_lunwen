@@ -77,7 +77,7 @@
 
 系统由图像采集模块、智能检测模块、抓取规划模块、机械臂控制模块及上位机监控模块组成。整体结构如图~\ref{fig:system_architecture} 所示。
 系统通过 \textbf{LWDetr} \cite{carion2020end,zhu2020deformable} 轻量化目标检测模型实现表面缺陷（划痕、脏污）检测，再结合 \textbf{GraspNet} \cite{ten2017grasp,mahler2017dex}无序抓取网络实现复杂堆叠环境下的智能分拣，最终完成零件的“自动识别—缺陷判定—自主抓取—分拣分类”全流程闭环。
-\begin{figure}[h]
+\begin{figure}[htbp]
     \centering
     \begin{tikzpicture}[
         node distance=1.8cm,
@@ -228,14 +228,14 @@
         % --- 连线定义 ---
         \path[line] (operator.east) -- node[midway, above, font=\scriptsize] {语音流} (asr.west);
         \path[line] (asr.east) -- node[midway, above, font=\scriptsize] {转录文本} (llm.west);
-        \path[line] (mcp.south) -- node[midway, above, font=\scriptsize] {底层API调用} (robot.north);
+        \path[line] (mcp.south) -- node[midway, left, font=\scriptsize] {底层API调用} (robot.north);
         \path[line] (llm.south) -- node[midway, left, font=\scriptsize, align=center] {结构化\\JSON指令} (json.north);
         \path[line] (json) -- (mcp);
         \path[line, orange!80!black]  (mcp.east) -- ++(2,0)  % 向右
   -- ++(0,-8)            % 向下
   -- (feedback.east);      % 向左连接到 feedback.east
 
-        \path[line, orange!80!black] (feedback.west) -- (operator.south) node[pos=0.25, right, font=\scriptsize, black] {闭环反馈};
+        \path[line, orange!80!black] (feedback.west) -- ++(-7.25,0) -- (operator.south) node[pos=0.25, right, font=\scriptsize, black] {闭环反馈};
     
         % 整体模块虚线框
         \node[draw, dashed, inner sep=10pt, fit=(asr) (llm) (mcp), label={[font=\small\bfseries]above:Speech-to-Action 交互逻辑链路}] (pipeline) {};
@@ -394,10 +394,6 @@ GraspNet 以点云数据为主要输入，核心结构包括：
 
 综上所述，该系统通用的架构与算法不仅解决了当前的应用难题，更具备向装配、搬运等更广泛工业环节推广的巨大潜力，为构建高柔性、可自优化的未来智能工厂提供了坚实的技术验证与可行的落地范例。
 
-\begin{figure}[htbp]\centering
-\fbox{\begin{minipage}[c][5cm][c]{0.9\linewidth}\centering 图占位：检测准确率/分拣成功率/节拍柱状图\end{minipage}}
-\caption{性能指标对比（占位）}\label{fig:metrics}
-\end{figure}
 
 \section{总结与未来展望}
 
